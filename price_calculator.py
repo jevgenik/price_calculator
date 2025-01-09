@@ -81,7 +81,7 @@ if uploaded_file:
 
         # Input for cutting cost per second
         cutting_cost_per_sec = st.number_input(
-            "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0
+            "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0, format="%.3f"  # Ensures three decimal precision in display
         )
 
         # Convert cutting time (hh:mm:ss) to seconds for calculation
