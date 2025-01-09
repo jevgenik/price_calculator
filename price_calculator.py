@@ -9,7 +9,8 @@ st.title("Hinnakalkulaator")
 
 # Upload Section
 ##st.header("Laadi AutoNest'i raportifail üles")
-st.write("### Laadi AutoNest'i raportifail üles")
+#st.write("### Laadi AutoNest'i raportifail üles")
+st.subheader("Laadi AutoNest'i raportifail üles")
 uploaded_file = st.file_uploader("Vali .txt fail", type="txt")
 
 # Dropdown for Metal Type Selection
@@ -68,13 +69,15 @@ if uploaded_file:
     parsed_data = parse_report(content)
     
     # Display parsed information
-    st.header("Failist loetud andmed")
+    #st.header("Failist loetud andmed")
+    st.subheader("Failist loetud andmed")
     for key, value in parsed_data.items():
         st.write(f"**{key}:** {value}")
 
     # Additional Input for Price Calculation
     if "Total Weight" in parsed_data and isinstance(parsed_data["Total Weight"], float): # If Weight is found in parsed data and is a float
-        st.header("Additional Input for Price Calculation")
+        #st.header("Additional Input for Price Calculation")
+        st.subheader("Lisainfo hinnakalkulatsiooniks")
         cost_per_kg = st.number_input(
             "Enter cost of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0
         )
