@@ -95,7 +95,7 @@ if uploaded_file:
         total_price = total_material_cost + total_cutting_cost
 
         # Display results
-        st.subheader("Calculation Results T")
+        st.subheader("Calculation Results")
         st.write(f"**Total Weight:** {total_weight} kg")
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
         st.write(f"**Cutting Time:** {cut_time_sec} seconds")
