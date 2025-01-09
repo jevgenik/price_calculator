@@ -106,6 +106,6 @@ if uploaded_file:
         #st.write(f"**Total Price:** €{total_price:.2f}")
         # Highlight Total Price
         st.markdown(
-            f"<h2 style='color:green;'>Total Price: €{total_price:.2f}</h2>",
+            f"<h3 style='color:green;'>Total Price: €{total_price:.2f}</h3>",
             unsafe_allow_html=True
         )
