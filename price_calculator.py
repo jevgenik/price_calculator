@@ -100,4 +100,9 @@ if uploaded_file:
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
         st.write(f"**Cutting Time:** {cut_time_sec} seconds")
         st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
-        st.write(f"**Total Price:** €{total_price:.2f}")
+        #st.write(f"**Total Price:** €{total_price:.2f}")
+        # Highlight Total Price
+        st.markdown(
+            f"<h2 style='color:green;'>Total Price: €{total_price:.2f}</h2>",
+            unsafe_allow_html=True
+        )
