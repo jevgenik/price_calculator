@@ -37,14 +37,14 @@ def parse_report(file_content):
     )
 
     if table_row_match:
-        parsed_data["Sheet Size X"] = int(table_row_match.group(1))  # Size X
-        parsed_data["Sheet Size Y"] = int(table_row_match.group(2))  # Size Y
-        parsed_data["Material"] = table_row_match.group(3).strip()   # Material
-        parsed_data["Thickness"] = float(table_row_match.group(4))  # Thickness
-        parsed_data["Total Sheets"] = int(table_row_match.group(5))  # Quantity
-        parsed_data["Area"] = float(table_row_match.group(6))        # Area
-        parsed_data["Weight"] = float(table_row_match.group(7))      # Weight
-        parsed_data["Cutting Time"] = table_row_match.group(8).strip()  # Efficiency
+        parsed_data["Sheet Size X"] = int(table_row_match.group(1))    # Size X
+        parsed_data["Sheet Size Y"] = int(table_row_match.group(2))    # Size Y
+        parsed_data["Material"] = table_row_match.group(3).strip()     # Material
+        parsed_data["Thickness"] = float(table_row_match.group(4))     # Thickness
+        parsed_data["Total Sheets"] = int(table_row_match.group(5))    # Quantity
+        parsed_data["Area"] = float(table_row_match.group(6))          # Area
+        parsed_data["Total Weight"] = float(table_row_match.group(7))  # Weight
+        parsed_data["Cutting Time"] = table_row_match.group(8).strip() # Efficiency
     else:
         parsed_data["Sheet Size X"] = "Not Found"
         parsed_data["Sheet Size Y"] = "Not Found"
@@ -73,7 +73,7 @@ if uploaded_file:
         st.write(f"**{key}:** {value}")
 
     # Additional Input for Price Calculation
-    if "Weight" in parsed_data and isinstance(parsed_data["Weight"], float): # If Weight is found in parsed data and is a float
+    if "Total Weight" in parsed_data and isinstance(parsed_data["Total Weight"], float): # If Weight is found in parsed data and is a float
         st.header("Additional Input for Price Calculation")
         cost_per_kg = st.number_input(
             "Enter cost of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0
@@ -89,14 +89,14 @@ if uploaded_file:
         cut_time_sec = h * 3600 + m * 60 + s
         
         # Perform the price calculations
-        total_weight = parsed_data["Weight"]
+        total_weight = parsed_data["Total Weight"]
         total_material_cost = total_weight * cost_per_kg
         total_cutting_cost = cut_time_sec * cutting_cost_per_sec
         total_price = total_material_cost + total_cutting_cost
 
         # Display results
         st.subheader("Calculation Results")
-        st.write(f"**Total Weight:** {total_weight} kg")
+        st.write(f"**Total Material Weight:** {total_weight} kg")
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
         st.write(f"**Cutting Time:** {cut_time_sec} seconds")
         st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
