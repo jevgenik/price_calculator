@@ -61,9 +61,12 @@ def parse_report(file_content):
 # Display File Content (Preview)
 if uploaded_file:
     st.success("Fail üleslaetud edukalt!")
-    # Decode and display the content for preview
+    # Decode the file content
     content = uploaded_file.read().decode("utf-8")
-    st.text_area("Faili sisu", content, height=300)
+
+    # Collapsible preview table
+    with st.expander("Preview Uploaded File (Expand to View)"):        
+        st.text_area("Faili sisu", content, height=300)
     
     # Parse the file content
     parsed_data = parse_report(content)
