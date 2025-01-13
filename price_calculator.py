@@ -1,5 +1,6 @@
 import streamlit as st
 import re # Regular expression library
+import pandas as pd
 
 # Set page layout to wide
 #st.set_page_config(layout="wide")
@@ -8,7 +9,7 @@ import re # Regular expression library
 st.set_page_config(
     page_title="Hinnakalkulaator",
     page_icon=":moneybag:",
-    #layout="wide",
+    layout="wide",
     initial_sidebar_state="expanded",
 )
 
@@ -34,39 +35,42 @@ uploaded_file = st.file_uploader("Vali .txt fail", type="txt")
 # selected_metal = st.selectbox("Metalli tüüp", metal_types)
 
 def parse_report(file_content):
-    """Parses the uploaded report and extracts relevant information."""
-    parsed_data = {}
-
-    # Sample table format:
+    """Parses the uploaded report and extracts all rows from the 'Sub Nests in Order' table."""
+    # Example input format to parse:
     # |Plate#  |Size X     |Size Y     |Material    |Thickness |Qty     |Area      |Weight   |Efficiency | 
-    # |1       |925        |1500       |Mild Steel  |8.2       |1       |1.39      |89.313   |00:04:18   |
+    # |1       |3000        |1500       |Mild Steel  |4.2       |6       |4.50      |148.365   |00:48:08    |
+    # |2       |3000        |1500       |Mild Steel  |4.2       |1       |5.50      |148.365   |00:43:09    |
 
-    # Extract the line containing table data (first row of Sub Nests in Order)
-    table_row_match = re.search(
-        r"\|1\s+\|(\d+)\s+\|(\d+)\s+\|([\w\s]+)\s+\|([\d.]+)\s+\|(\d+)\s+\|([\d.]+)\s+\|([\d.]+)\s+\|([\d:]+)\s+\|",
+    # List to store all parsed rows (each list element/row is a dictionary)
+    # [ 
+    #   { "Plate#": 1, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 6, "Area": 4.50, "Weight": 148.365, "Cutting Time": "00:48:08" },
+    #   { "Plate#": 2, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 1, "Area": 5.50, "Weight": 148.365, "Cutting Time": "00:43:09" }
+    # ]
+    parsed_rows = []
+
+    # Regex to match each row in the "Sub Nests in Order" table
+    # findall() returns a list of tuples, where each tuple contains the matched groups (columns) for a row
+    # e.g. [(1, 3000, 1500, "Mild Steel", 4.2, 6, 4.50, 148.365, "00:48:08"), (2, 3000, 1500, "Mild Steel", 4.2, 1, 5.50, 148.365, "00:43:09")]
+    table_row_matches = re.findall(
+        r"\|(\d+)\s+\|(\d+)\s+\|(\d+)\s+\|([\w\s]+)\s+\|([\d.]+)\s+\|(\d+)\s+\|([\d.]+)\s+\|([\d.]+)\s+\|([\d:]+)\s+\|",
         file_content
     )
 
-    if table_row_match:
-        parsed_data["Sheet Size X"] = int(table_row_match.group(1))    # Size X
-        parsed_data["Sheet Size Y"] = int(table_row_match.group(2))    # Size Y
-        parsed_data["Material"] = table_row_match.group(3).strip()     # Material
-        parsed_data["Thickness"] = float(table_row_match.group(4))     # Thickness
-        parsed_data["Total Sheets"] = int(table_row_match.group(5))    # Quantity
-        parsed_data["Area"] = float(table_row_match.group(6))          # Area
-        parsed_data["Total Weight"] = float(table_row_match.group(7))  # Weight
-        parsed_data["Cutting Time"] = table_row_match.group(8).strip() # Efficiency
-    else:
-        parsed_data["Sheet Size X"] = "Not Found"
-        parsed_data["Sheet Size Y"] = "Not Found"
-        parsed_data["Material"] = "Not Found"
-        parsed_data["Thickness"] = "Not Found"
-        parsed_data["Total Sheets"] = "Not Found"
-        parsed_data["Area"] = "Not Found"
-        parsed_data["Weight"] = "Not Found"
-        parsed_data["Cutting Time"] = "Not Found"
+    # Convert the matched tuples to a list of dictionaries
+    for match in table_row_matches:
+        parsed_rows.append({
+            "Plate#": int(match[0]),          # Plate number
+            "Sheet Size X": int(match[1]),    # Size X
+            "Sheet Size Y": int(match[2]),    # Size Y
+            "Material": match[3].strip(),     # Material
+            "Thickness": float(match[4]),     # Thickness
+            "Quantity": int(match[5]),        # Quantity
+            "Area": float(match[6]),          # Area
+            "Weight": float(match[7]),        # Weight
+            "Cutting Time": match[8].strip()  # Efficiency
+        })
 
-    return parsed_data
+    return parsed_rows
 
 # Display File Content (Preview)
 if uploaded_file:
@@ -79,45 +83,56 @@ if uploaded_file:
         st.text_area("Faili sisu", content, height=300)
     
     # Parse the file content
-    parsed_data = parse_report(content)
+    # parse_report returns a list of dictionaries, where each dictionary represents a row from the report
+    parsed_rows = parse_report(content)
     
-    # Display parsed information
-    #st.header("Failist loetud andmed")
-    st.subheader("Failist loetud andmed")
-    for key, value in parsed_data.items():
-        st.write(f"**{key}:** {value}")
+    # Display parsed information for all rows (sub nests) from the report
+    
+    # st.subheader("Failist loetud andmed")
+    # for i, row in enumerate(parsed_rows):
+    #     st.write(f"### Plate #{i+1}")
+    #     for key, value in row.items():
+    #         st.write(f"**{key}:** {value}")
+
+    if parsed_rows:
+        # Convert parsed data to a DataFrame for better display
+        parsed_df = pd.DataFrame(parsed_rows)
+
+        # Display the table using Streamlit
+        st.table(parsed_df)  # Use st.dataframe(parsed_df) for a scrollable table
+    else:
+        st.write("No data found in the uploaded file.")
 
     # Additional Input for Price Calculation
-    if "Total Weight" in parsed_data and isinstance(parsed_data["Total Weight"], float): # If Weight is found in parsed data and is a float
-        #st.header("Additional Input for Price Calculation")
-        st.subheader("Lisainfo hinnakalkulatsiooniks")
-        cost_per_kg = st.number_input(
-            "Enter cost of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0
-        )
+    #if "Weight" in parsed_data and isinstance(parsed_data["Weight"], float): # If Weight is found in parsed data and is a float
 
-        # Input for cutting cost per second
-        cutting_cost_per_sec = st.number_input(
-            "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0, format="%.3f"  # Ensures three decimal precision in display
-        )
+    #st.header("Additional Input for Price Calculation")
+    st.subheader("Lisainfo hinnakalkulatsiooniks") # H3
+    cost_per_kg = st.number_input(
+        "Enter cost of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0
+    )
 
-        # Convert cutting time (hh:mm:ss) to seconds for calculation
-        h, m, s = map(int, parsed_data["Cutting Time"].split(":"))
-        cut_time_sec = h * 3600 + m * 60 + s
-        
-        # Perform the price calculations
-        total_weight = parsed_data["Total Weight"]
+    # Input for cutting cost per second
+    cutting_cost_per_sec = st.number_input(
+        "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0, format="%.3f"  # Ensures three decimal precision in display
+    )
+
+     # Perform calculations for each row
+    st.subheader("Calculation Results")
+    for i, row in enumerate(parsed_rows):
+        h, m, s = map(int, row["Cutting Time"].split(":"))
+        cut_time_sec = h * 3600 + m * 60 + s # Convert cutting time to seconds
+
+        total_weight = row["Weight"]
         total_material_cost = total_weight * cost_per_kg
         total_cutting_cost = cut_time_sec * cutting_cost_per_sec
         total_price = total_material_cost + total_cutting_cost
 
-        # Display results
-        st.subheader("Calculation Results")
+        st.write(f"### Plate #{i+1}")
         st.write(f"**Total Material Weight:** {total_weight} kg")
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
         st.write(f"**Cutting Time:** {cut_time_sec} seconds")
         st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
-        #st.write(f"**Total Price:** €{total_price:.2f}")
-        # Highlight Total Price
         st.markdown(
             f"<h3 style='color:green;'>Total Price: €{total_price:.2f}</h3>",
             unsafe_allow_html=True
