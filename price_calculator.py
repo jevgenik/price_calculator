@@ -4,13 +4,23 @@ import re # Regular expression library
 # Set page layout to wide
 #st.set_page_config(layout="wide")
 
+# Configure the page    
+st.set_page_config(
+    page_title="Hinnakalkulaator",
+    page_icon=":moneybag:",
+    #layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+
 # Title of the app
-st.title("Hinnakalkulaator")
+st.title("Hinnakalkulaator") # H1
 
 # Upload Section
-##st.header("Laadi AutoNest'i raportifail üles")
-#st.write("### Laadi AutoNest'i raportifail üles")
-st.subheader("Laadi AutoNest'i raportifail üles")
+##st.header("Laadi AutoNest'i raportifail üles") # H2
+#st.write("### Laadi AutoNest'i raportifail üles") 
+st.subheader("Laadi AutoNest'i raportifail üles") # H3
+#uploaded_file = st.sidebar.file_uploader("Vali .txt fail", type="txt")
 uploaded_file = st.file_uploader("Vali .txt fail", type="txt")
 
 # Dropdown for Metal Type Selection
