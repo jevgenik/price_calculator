@@ -117,23 +117,41 @@ if uploaded_file:
         "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0, format="%.3f"  # Ensures three decimal precision in display
     )
 
-     # Perform calculations for each row
-    st.subheader("Calculation Results")
-    for i, row in enumerate(parsed_rows):
-        h, m, s = map(int, row["Cutting Time"].split(":"))
-        cut_time_sec = h * 3600 + m * 60 + s # Convert cutting time to seconds
+    # Perform calculations for the entire order
+    # parsed_rows is a list of dictionaries, where each dictionary represents a row from the report
+    if parsed_rows:
+        st.subheader("Summary for the Entire Order")
 
-        total_weight = row["Weight"]
-        total_material_cost = total_weight * cost_per_kg
-        total_cutting_cost = cut_time_sec * cutting_cost_per_sec
+        # Calculate total weight for all rows
+        total_weight = sum(row["Weight"] for row in parsed_rows) # row["Weight"] - access the value of the "Weight" key in the row dictionary
+
+        # Calculate total cutting time in seconds for all rows
+        total_cutting_time_sec = sum(
+            int(h) * 3600 + int(m) * 60 + int(s) 
+            for row in parsed_rows 
+            for h, m, s in [row["Cutting Time"].split(":")]
+        )
+
+        # Convert total cutting time to HH:MM:SS format
+        total_cutting_time = f"{total_cutting_time_sec // 3600:02}:{(total_cutting_time_sec % 3600) // 60:02}:{total_cutting_time_sec % 60:02}"
+
+        # Calculate total material cost for all rows
+        total_material_cost = sum(row["Weight"] * cost_per_kg for row in parsed_rows)
+
+        # Calculate total cutting cost for all rows
+        total_cutting_cost = total_cutting_time_sec * cutting_cost_per_sec
+
+        # Calculate total price for the entire order
         total_price = total_material_cost + total_cutting_cost
 
-        st.write(f"### Plate #{i+1}")
-        st.write(f"**Total Material Weight:** {total_weight} kg")
+        # Display summarized results
+        st.write(f"**Total Material Weight:** {total_weight:.2f} kg")
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
-        st.write(f"**Cutting Time:** {cut_time_sec} seconds")
+        st.write(f"**Total Cutting Time:** {total_cutting_time} / {total_cutting_time_sec} seconds")
         st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
         st.markdown(
             f"<h3 style='color:green;'>Total Price: €{total_price:.2f}</h3>",
             unsafe_allow_html=True
         )
+    else:
+        st.write("No data found in the uploaded file.")
