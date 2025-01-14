@@ -37,14 +37,14 @@ uploaded_file = st.file_uploader("Vali .txt fail", type="txt")
 def parse_report(file_content):
     """Parses the uploaded report and extracts all rows from the 'Sub Nests in Order' table."""
     # Example input format to parse:
-    # |Plate#  |Size X     |Size Y     |Material    |Thickness |Qty     |Area      |Weight   |Efficiency | 
+    # |Plate#  |Size X      |Size Y     |Material    |Thickness |Qty     |Area      |Weight    |Efficiency | 
     # |1       |3000        |1500       |Mild Steel  |4.2       |6       |4.50      |148.365   |00:48:08    |
     # |2       |3000        |1500       |Mild Steel  |4.2       |1       |5.50      |148.365   |00:43:09    |
 
     # List to store all parsed rows (each list element/row is a dictionary)
     # [ 
-    #   { "Plate#": 1, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 6, "Area": 4.50, "Weight": 148.365, "Cutting Time": "00:48:08" },
-    #   { "Plate#": 2, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 1, "Area": 5.50, "Weight": 148.365, "Cutting Time": "00:43:09" }
+    #   { "Plate#": 1, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 6, "Area": 4.50, "Weight": 148.365, "Cutting Time (1 sheet)": "00:48:08" },
+    #   { "Plate#": 2, "Sheet Size X": 3000, "Sheet Size Y": 1500, "Material": "Mild Steel", "Thickness": 4.2, "Quantity": 1, "Area": 5.50, "Weight": 148.365, "Cutting Time (1 sheet)": "00:43:09" }
     # ]
     parsed_rows = []
 
@@ -67,7 +67,7 @@ def parse_report(file_content):
             "Quantity": int(match[5]),        # Quantity
             "Area": float(match[6]),          # Area
             "Weight": float(match[7]),        # Weight
-            "Cutting Time": match[8].strip()  # Efficiency
+            "Cutting Time (1 sheet)": match[8].strip()  # Efficiency
         })
 
     return parsed_rows
@@ -77,6 +77,8 @@ if uploaded_file:
     st.success("Fail üleslaetud edukalt!")
     # Decode the file content
     content = uploaded_file.read().decode("utf-8")
+    
+    st.subheader("Loetud sisendandmed") # H3
 
     # Collapsible preview table
     with st.expander("Preview Uploaded File (Expand to View)"):        
@@ -117,41 +119,94 @@ if uploaded_file:
         "Enter cutting cost per second (€/sec):", min_value=0.0, step=0.001, value=0.0, format="%.3f"  # Ensures three decimal precision in display
     )
 
-    # Perform calculations for the entire order
-    # parsed_rows is a list of dictionaries, where each dictionary represents a row from the report
+    # Perform calculations
+    # parsed_rows is a list of dictionaries, where each dictionary represents a row (sub nest) from the report
     if parsed_rows:
-        st.subheader("Summary for the Entire Order")
+        st.subheader("Arvutatud hinnad")
 
-        # Calculate total weight for all rows
-        total_weight = sum(row["Weight"] for row in parsed_rows) # row["Weight"] - access the value of the "Weight" key in the row dictionary
+        # Create a DataFrame from parsed rows
+        parsed_df = pd.DataFrame(parsed_rows)
 
-        # Calculate total cutting time in seconds for all rows
-        total_cutting_time_sec = sum(
-            int(h) * 3600 + int(m) * 60 + int(s) 
-            for row in parsed_rows 
-            for h, m, s in [row["Cutting Time"].split(":")]
+        # Add new columns for calculated data
+        parsed_df["Total Weight"] = parsed_df["Weight"] * parsed_df["Quantity"]
+        parsed_df["Cutting Time (sec / 1 sheet)"] = parsed_df["Cutting Time (1 sheet)"].apply(
+            lambda x: int(x.split(":")[0]) * 3600 + int(x.split(":")[1]) * 60 + int(x.split(":")[2])
         )
+        parsed_df["Total Cutting Time"] = parsed_df["Cutting Time (sec / 1 sheet)"] * parsed_df["Quantity"]
+        parsed_df["Total Material Cost"] = parsed_df["Total Weight"] * cost_per_kg
+        parsed_df["Total Cutting Cost"] = parsed_df["Total Cutting Time"] * cutting_cost_per_sec
+        parsed_df["Total Price"] = parsed_df["Total Material Cost"] + parsed_df["Total Cutting Cost"]
+
+        # Create a copy of parsed_df for display purposes
+        parsed_df_display = parsed_df.copy()
+
+        # Add units to the display DataFrame
+        parsed_df_display["Total Weight"] = parsed_df["Total Weight"].apply(lambda x: f"{x:.2f} kg")
+        parsed_df_display["Total Material Cost"] = parsed_df["Total Material Cost"].apply(lambda x: f"€{x:.2f}")
+        parsed_df_display["Total Cutting Time"] = parsed_df["Total Cutting Time"].apply(lambda x: f"{x} sec")
+        parsed_df_display["Total Cutting Cost"] = parsed_df["Total Cutting Cost"].apply(lambda x: f"€{x:.2f}")
+        parsed_df_display["Total Price"] = parsed_df["Total Price"].apply(lambda x: f"€{x:.2f}")
+
+        # Display the updated table
+        st.dataframe(
+            parsed_df_display[[
+                "Plate#", "Material", "Thickness", "Quantity", "Total Weight", 
+                "Total Material Cost", "Total Cutting Time", "Total Cutting Cost", "Total Price"
+            ]],
+            hide_index=True
+        )
+
+        # Summarize the total values
+        total_weight = parsed_df["Total Weight"].sum()
+        total_material_cost = parsed_df["Total Material Cost"].sum()
+        total_cutting_cost = parsed_df["Total Cutting Cost"].sum()
+        total_cutting_time_sec = parsed_df["Total Cutting Time"].sum()
+        total_price = parsed_df["Total Price"].sum()
 
         # Convert total cutting time to HH:MM:SS format
         total_cutting_time = f"{total_cutting_time_sec // 3600:02}:{(total_cutting_time_sec % 3600) // 60:02}:{total_cutting_time_sec % 60:02}"
 
-        # Calculate total material cost for all rows
-        total_material_cost = sum(row["Weight"] * cost_per_kg for row in parsed_rows)
-
-        # Calculate total cutting cost for all rows
-        total_cutting_cost = total_cutting_time_sec * cutting_cost_per_sec
-
-        # Calculate total price for the entire order
-        total_price = total_material_cost + total_cutting_cost
-
         # Display summarized results
         st.write(f"**Total Material Weight:** {total_weight:.2f} kg")
         st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
-        st.write(f"**Total Cutting Time:** {total_cutting_time} / {total_cutting_time_sec} seconds")
+        st.write(f"**Total Cutting Time:** {total_cutting_time} (HH:MM:SS) / {total_cutting_time_sec} seconds")
         st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
         st.markdown(
             f"<h3 style='color:green;'>Total Price: €{total_price:.2f}</h3>",
             unsafe_allow_html=True
         )
-    else:
-        st.write("No data found in the uploaded file.")
+        
+
+    #     # Calculate total weight for all rows
+    #     total_weight = sum(row["Weight"] for row in parsed_rows) # row["Weight"] - access the value of the "Weight" key in the row dictionary
+
+    #     # Calculate total cutting time in seconds for all rows
+    #     total_cutting_time_sec = sum(
+    #         int(h) * 3600 + int(m) * 60 + int(s) 
+    #         for row in parsed_rows 
+    #         for h, m, s in [row["Cutting Time"].split(":")]
+    #     )
+
+    #     # Convert total cutting time to HH:MM:SS format
+    #     total_cutting_time = f"{total_cutting_time_sec // 3600:02}:{(total_cutting_time_sec % 3600) // 60:02}:{total_cutting_time_sec % 60:02}"
+
+    #     # Calculate total material cost for all rows
+    #     total_material_cost = sum(row["Weight"] * cost_per_kg for row in parsed_rows)
+
+    #     # Calculate total cutting cost for all rows
+    #     total_cutting_cost = total_cutting_time_sec * cutting_cost_per_sec
+
+    #     # Calculate total price for the entire order
+    #     total_price = total_material_cost + total_cutting_cost
+
+    #     # Display summarized results
+    #     st.write(f"**Total Material Weight:** {total_weight:.2f} kg")
+    #     st.write(f"**Total Material Cost:** €{total_material_cost:.2f}")
+    #     st.write(f"**Total Cutting Time:** {total_cutting_time} / {total_cutting_time_sec} seconds")
+    #     st.write(f"**Total Cutting Cost:** €{total_cutting_cost:.2f}")
+    #     st.markdown(
+    #         f"<h3 style='color:green;'>Total Price: €{total_price:.2f}</h3>",
+    #         unsafe_allow_html=True
+    #     )
+    # else:
+    #     st.write("No data found in the uploaded file.")
