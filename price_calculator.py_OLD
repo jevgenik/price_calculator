@@ -72,32 +72,53 @@ def parse_report(file_content):
 
     return parsed_rows
 
-# Display File Content (Preview)
+# Function to parse the 'Parts in Order' table
+def parse_parts_table(file_content):
+    """Parses the 'Parts in Order' table from the report."""
+    # Regex to match rows in the "Parts in Order" table
+    parts_table_matches = re.findall(
+        r"\|(.+?)\s+\|(\d+)\s+\|(\d+)\s+\|([\d.]+)\s+\|([\d:]+)\s+\|",
+        file_content
+    )
+
+    # Process matched rows
+    parts_data = []
+    for match in parts_table_matches:
+        full_path, ordered_qty, placed_qty, weight, cut_time = match
+        part_name = re.search(r"([\w-]+)_", full_path).group(1)  # Extract part name
+        ordered_qty = int(ordered_qty)
+        weight = float(weight)
+        cut_time_sec = sum(int(x) * 60 ** i for i, x in enumerate(reversed(cut_time.split(":"))))  # Convert to seconds
+
+        parts_data.append({
+            "Part Name": part_name,
+            "Ordered Qty": ordered_qty,
+            "Weight (kg)": weight,
+            "Cut Time (sec)": cut_time_sec
+        })
+
+    return pd.DataFrame(parts_data)
+
+# Main logic
 if uploaded_file:
     st.success("Fail üleslaetud edukalt!")
-    # Decode the file content
+    # Read the file content
     content = uploaded_file.read().decode("utf-8")
     
     st.subheader("Loetud sisendandmed") # H3
 
+    # Display File Content (Preview)
     # Collapsible preview table
     with st.expander("Preview Uploaded File (Expand to View)"):        
         st.text_area("Faili sisu", content, height=300)
     
-    # Parse the file content
+    # Parse "Sub Nests in Order" table from the report
     # parse_report returns a list of dictionaries, where each dictionary represents a row from the report
     parsed_rows = parse_report(content)
     
-    # Display parsed information for all rows (sub nests) from the report
-    
-    # st.subheader("Failist loetud andmed")
-    # for i, row in enumerate(parsed_rows):
-    #     st.write(f"### Plate #{i+1}")
-    #     for key, value in row.items():
-    #         st.write(f"**{key}:** {value}")
-
+    # Display "Sub Nests in Order" table
     if parsed_rows:
-        # Convert parsed data to a DataFrame for better display
+        # Convert list of dictionaries to a DataFrame
         parsed_df = pd.DataFrame(parsed_rows)
 
         # Display the table using Streamlit
@@ -155,6 +176,35 @@ if uploaded_file:
             ]],
             hide_index=True
         )
+
+        # Display the new Parts in Order table below Arvutatud hinnad
+        parts_df = parse_parts_table(content)
+
+        if not parts_df.empty:
+            # Add calculated columns for parts
+            parts_df["Price per Part (€)"] = (
+                parts_df["Weight (kg)"] * cost_per_kg
+            ) + (
+                parts_df["Cut Time (sec)"] * cutting_cost_per_sec
+            )
+            parts_df["Total Price (€)"] = parts_df["Price per Part (€)"] * parts_df["Ordered Qty"]
+
+            # Display the Parts in Order table
+            st.subheader("Parts in Order")
+            st.dataframe(
+                parts_df[[
+                    "Part Name", "Ordered Qty", "Weight (kg)", "Cut Time (sec)", "Price per Part (€)", "Total Price (€)"
+                ]],
+                hide_index=True
+            )
+
+            # Summarize total values for parts
+            total_parts_price = parts_df["Total Price (€)"].sum()
+
+            # Display summary below the table
+            st.write(f"**Total Price for All Parts:** €{total_parts_price:.2f}")
+        else:
+            st.warning("No 'Parts in Order' data found in the uploaded file.")
 
         # Summarize the total values
         total_weight = parsed_df["Total Weight"].sum()
