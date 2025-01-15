@@ -21,6 +21,7 @@ if uploaded_file:
         st.text_area("Faili sisu", content, height=300)
 
     # Parse data
+    # Get lists of dictionaries for subnests and parts
     subnests_data = parse_subnests(content)
     parts_data = parse_parts(content)
 
@@ -29,34 +30,19 @@ if uploaded_file:
     parts_df = pd.DataFrame(parts_data)
 
     # Input fields for prices
-    price_per_kg = st.number_input("Enter price of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0)
-    cutting_price_per_sec = st.number_input("Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.0)
+    #mat_price_per_kg = st.number_input("Enter price of material per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0)
+    #cutting_price_per_sec = st.number_input("Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.0)
+    # Input fields for prices (moved to sidebar)
+    with st.sidebar:
+        st.subheader("Price Inputs")  # Optional header in sidebar
+        mat_price_per_kg = st.number_input("Enter material price per kilogram (€/kg):", min_value=0.0, step=0.1, value=0.0)
+        cutting_price_per_sec = st.number_input("Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.0)
 
     # Perform calculations for subnests and parts
-    subnests_df = calculate_subnests(subnests_df, price_per_kg, cutting_price_per_sec)
-    parts_df = calculate_parts(parts_df, price_per_kg, cutting_price_per_sec)
-    
-    # Round numeric values in the DataFrame to 2 decimal places
-    parts_df = parts_df.round(2)
+    subnests_df = calculate_subnests(subnests_df, mat_price_per_kg, cutting_price_per_sec)
+    parts_df = calculate_parts(parts_df, mat_price_per_kg, cutting_price_per_sec)    
 
-    # Exclude specific columns from totals calculation (e.g., "Price per Part (€)")
-    exclude_columns = ["Weight (kg)", "Cutting Time (sec)", "Price per Part (€)"]
-    totals_row = {
-        col: parts_df[col].sum() if col not in exclude_columns and pd.api.types.is_numeric_dtype(parts_df[col]) else "TOTALS"
-        for col in parts_df.columns
-    }
-
-    # Format numeric totals to 2 decimal places
-    #totals_row["Weight (kg)"] = f"{totals_row['Weight (kg)']:.2f}"
-    #totals_row["Total Price (€)"] = f"{totals_row['Total Price (€)']:.2f}"
-
-    # Convert totals_row to a DataFrame with a single row
-    totals_df = pd.DataFrame([totals_row])
-
-    # Concatenate the totals row with the original parts DataFrame
-    parts_df_with_totals = pd.concat([parts_df, totals_df], ignore_index=True)
-
-    # Display tables
+    # ====== Sub Nests =====
     #display_table(subnests_df, "Sub Nests in Order")
     display_table(
       subnests_df[[
@@ -66,9 +52,6 @@ if uploaded_file:
       ]],
       "Sub Nests in Order"
     )
-    # Display the "Parts in Order" table with totals
-    display_table(parts_df_with_totals, "Parts in Order (with Totals)")
-    #display_table(parts_df, "Parts in Order")
 
     # Summarize the total values
     total_weight = subnests_df["Total Weight (kg)"].sum()
@@ -79,3 +62,16 @@ if uploaded_file:
 
     # Pass all calculated values to the summary display
     display_summary(total_weight, total_material_price, total_cutting_time_sec, total_cutting_price, total_price)
+    
+    # ====== Parts =====
+    # Display the "Parts in Order" table 
+    display_table(parts_df, "Parts in Order")    
+
+    # Calculate total price for all parts
+    total_parts_price = parts_df["Total Price (€)"].sum()
+
+    # Display the total price below the "Parts in Order" table
+    st.markdown(
+        f"<h3 style='color:green;'>Total Price (All Parts): €{total_parts_price:.2f}</h3>",
+        unsafe_allow_html=True
+    )
