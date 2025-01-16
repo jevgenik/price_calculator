@@ -23,10 +23,14 @@ if uploaded_file:
     # Parse data
     # Get lists of dictionaries for subnests and parts
     subnests_data = parse_subnests(content)
+    #print(f"Sub Nests parsed rows: {subnests_data}")  # Debugging: Print parsed rows
+
     parts_data = parse_parts(content)
 
     # Convert to DataFrames
     subnests_df = pd.DataFrame(subnests_data)
+    #print(f"Sub Nests dataframe columns: {subnests_df.columns}")  # Debugging: Print columns
+
     parts_df = pd.DataFrame(parts_data)
 
     # Input fields for prices
