@@ -47,8 +47,7 @@ def parse_subnests(file_content):
     # Regex to match each row in the "Sub Nests in Order" table
     # findall() returns a list of tuples, where each tuple contains the matched groups (columns) for a row
     # e.g. [(1, 3000, 1500, "Mild Steel", 4.2, 6, 4.50, 148.365, "00:48:08"), (2, 3000, 1500, "Mild Steel", 4.2, 1, 5.50, 148.365, "00:43:09")]
-    table_row_matches = re.findall(
-        #r"\|(\d+)\s+\|(\d+)\s+\|(\d+)\s+\|([\w\s]+)\s+\|([\d.]+)\s+\|(\d+)\s+\|([\d.]+)\s+\|([\d.]+)\s+\|([\d:]+)\s+\|",
+    table_row_matches = re.findall(        
         r"\|(\d+)\s*\|(\d+)\s*\|(\d+)\s*\|([\w\s]+?)\s*\|([\d.]+)\s*\|(\d+)\s*\|([\d.]+)\s*\|([\d.]+)\s*\|([\d:]+)\s*\|",
         file_content
     )
