@@ -1,6 +1,6 @@
 import re # Regular expression library
 
-def parse_subnests(file_content):
+def parse_sub_nests(file_content):
     """
     Parses the 'Sub Nests in Order' table from the report.
 
@@ -70,13 +70,15 @@ def parse_subnests(file_content):
 
     return parsed_rows
 
-def parse_parts(file_content):
+def parse_parts(file_content, material, thickness):
     """
-    Parses the 'Parts in Order' table from the report.
+    Parses the 'Parts in Order' table from the report and adds Material and Thickness.
 
     Args:
         file_content (str): The entire content of the uploaded .txt report as a string.
                             This includes all sections of the report, such as tables, headers, etc.
+        material (str): The material type for the report.
+        thickness (float): The thickness for the report.
 
     Returns:
         list[dict]: A list of dictionaries, where each dictionary represents a row
@@ -85,16 +87,9 @@ def parse_parts(file_content):
                     - Ordered Qty: The number of parts ordered
                     - Weight (kg): The weight of a single part in kilograms
                     - Cutting Time (sec): The time to cut a single part in seconds
-    """
-    # Debugging: Extract table section
-    # try:
-    #     start_marker = "Parts in Order:"
-    #     parts_section = file_content.split(start_marker)[1].strip()
-    #     print(f"Parts Section:\n{parts_section}")  # Debugging: Inspect raw table content
-    # except IndexError:
-    #     print("Error: Could not extract 'Parts in Order' table.")
-    #     return []
-
+                    - Material: The material type for the part (e.g., "Mild Steel")
+                    - Thickness (mm): The thickness of the part in millimeters
+    """    
     # Regex to match rows in the "Parts in Order" table
     # findall() returns a list of tuples, where each tuple contains the matched groups (columns) for a row
     # e.g "Parts in Order":
@@ -102,7 +97,6 @@ def parse_parts(file_content):
     # -------------------------------------------------------------------------------------------------------------------
     # |T:\METALIKAN\MT25010058\5MM\206835_5MM_12tk.DFT                   |12           |12         |6.34      |00:00:26 |
     # |T:\METALIKAN\MT25010058\5MM\206815_5MM_V50_P528_6tk.DFT           |6            |6          |17.53     |00:00:32 |
-
     parts_table_matches = re.findall(                
         r"\|(.+?)\s*\|(\d+)\s*\|(\d+)\s*\|([\d.]+)\s*\|([\d:]+)\s*\|",        
         file_content
@@ -111,9 +105,10 @@ def parse_parts(file_content):
     #print(f"Regex Matches for Parts: {parts_table_matches}")  # Debugging: Print matches
 
     # Process matched rows
+    # List to store all parsed rows (each list element/row is a dictionary)
     parts_data = []
     for match in parts_table_matches:
-        full_path, ordered_qty, placed_qty, weight, cutting_time = match # match is a tuple, unpack it into variables
+        full_path, ordered_qty, placed_qty, weight, cutting_time = match  # match is a tuple, unpack it into variables
 
         # Extract the part name from the full file path                
         part_name = re.search(r"([\w\s-]+)\.[dD][fF][tT]", full_path).group(1)
@@ -133,9 +128,44 @@ def parse_parts(file_content):
             "Part Name": part_name,
             "Ordered Qty": ordered_qty,
             "Weight (kg)": weight,
-            "Cutting Time (sec)": cutting_time_sec
+            "Cutting Time (sec)": cutting_time_sec,
+            "Material": material,  # Assign material for the entire report
+            "Thickness (mm)": thickness  # Assign thickness for the entire report
         })
 
     # print(parts_data)  # Debugging: Print parsed rows
 
     return parts_data
+
+def parse_multiple_reports(file_contents):
+    """
+    Parses and combines data from multiple Metallix AutoNest reports.
+    Args:
+        file_contents (list of str): each element is the content of a single uploaded report.
+
+    Returns:
+        dict: Combined data for Sub Nests, Parts in Order
+    """
+    combined_data = {
+        "sub_nests": [], # List of dictionaries (each dictionary represents a row in the 
+                         # 'Sub Nests in Order' table from all reports)
+        "parts": [] # List of dictionaries (each dictionary represents a row in the 
+                    # 'Parts in Order' table from all reports)
+    }
+
+    for content in file_contents:
+        # Parse Sub Nests from the current report and add to combined data        
+        # parsed_sub_nests returns a list of dictionaries
+        sub_nests = parse_sub_nests(content)
+        combined_data["sub_nests"].extend(sub_nests)
+
+        # Extract material and thickness from the first row of sub_nests
+        material = sub_nests[0]["Material"]
+        thickness = sub_nests[0]["Thickness (mm)"]
+
+        # Parse Parts from the current report and add to combined data
+        # parsed_parts returns a list of dictionaries
+        parts = parse_parts(content, material, thickness)
+        combined_data["parts"].extend(parts)
+
+    return combined_data
