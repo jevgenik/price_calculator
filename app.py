@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from parsers import parse_sub_nests, parse_parts, parse_multiple_reports
-from calculations import calculate_sub_nests, calculate_parts, calculate_order
+from calculations import calculate_sub_nests, calculate_parts, calculate_order, MissingMaterialPriceError
 from ui_components import display_table, display_summary
 
 # Streamlit configuration
@@ -12,9 +12,10 @@ st.title("Hinnakalkulaator")
 
 # Define a dictionary of materials with default prices (€/kg)
 materials_with_prices = {
-    "Stainless Steel": 5.0,
-    "Mild Steel": 3.0,
-    "Aluminum": 4.0
+    "Aluminum": 1.9,
+    "Galvanized Steel": 0.5,   
+    "Mild Steel": 0.3,    
+    "Stainless Steel": 1.7
 }
 
 # Sidebar inputs for prices
@@ -65,11 +66,18 @@ if st.button("Process Files"):
         # Combine and process report files
         st.write("Processing uploaded reports...")
 
-        # Parse and calculate combined data
-        combined_data = parse_multiple_reports(file_contents)
-        # material_prices is a dictionary contains the material names as keys and their corresponding user-specified prices 
-        # (from the sidebar input) as values.
-        results = calculate_order(combined_data, material_prices, cutting_price_per_sec)        
+        try:
+            # Parse and calculate combined data
+            combined_data = parse_multiple_reports(file_contents)
+            # material_prices is a dictionary contains the material names as keys and their corresponding user-specified prices 
+            # (from the sidebar input) as values.
+            results = calculate_order(combined_data, material_prices, cutting_price_per_sec)        
+        except MissingMaterialPriceError as e:
+            st.error(str(e))  # Display a specific message for missing material prices
+            st.stop()  # Gracefully halt execution
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")  # Catch any other unexpected error
+            st.stop()
 
         # Extract results (DataFrames) from the combined results dictionary
         sub_nests_df = results["sub_nests_with_calcs_df"]

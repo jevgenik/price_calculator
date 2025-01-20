@@ -1,5 +1,8 @@
 import pandas as pd
-import streamlit as st
+
+class MissingMaterialPriceError(Exception):
+    """Custom exception for missing material prices."""
+    pass
 
 def calculate_sub_nests(sub_nests_df, mat_price_per_kg, cutting_price_per_sec):
     """
@@ -62,6 +65,12 @@ def calculate_order(combined_data, material_prices, cutting_price_per_sec):
     # Convert combined data to DataFrames
     sub_nests_df = pd.DataFrame(combined_data["sub_nests"])
     parts_df = pd.DataFrame(combined_data["parts"])
+
+    # Check for missing materials in the material_prices dictionary
+    missing_materials = set(sub_nests_df["Material"]) - set(material_prices.keys())
+    if missing_materials:
+        # Convert the set of missing materials to a comma-separated string and raise a custom exception
+        raise MissingMaterialPriceError(f"Missing prices for materials: {', '.join(missing_materials)}")
 
     # ===== Sub Nests Calculations =====
     sub_nests_df["Total Weight (kg)"] = sub_nests_df["Weight (kg)"] * sub_nests_df["Quantity"]
