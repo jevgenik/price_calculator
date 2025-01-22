@@ -3,6 +3,7 @@ import pandas as pd
 from parsers import parse_sub_nests, parse_parts, parse_multiple_reports
 from calculations import calculate_sub_nests, calculate_parts, calculate_order, MissingMaterialPriceError
 from ui_components import display_table, display_summary
+from api_utils import submit_prices_to_bubble
 
 # Streamlit configuration
 st.set_page_config(page_title="Hinnakalkulaator", page_icon=":moneybag:", layout="wide")
@@ -38,6 +39,11 @@ with st.sidebar:
         "Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.05
     )
 
+# Initialize session state variables
+if "sub_nests_df" not in st.session_state:
+    st.session_state.sub_nests_df = None
+if "parts_df" not in st.session_state:
+    st.session_state.parts_df = None
 
 # Upload multiple reports
 # Rreturns a list of file objects
@@ -80,8 +86,11 @@ if st.button("Process Files"):
             st.stop()
 
         # Extract results (DataFrames) from the combined results dictionary
-        sub_nests_df = results["sub_nests_with_calcs_df"]
-        parts_df = results["parts_with_calcs_df"]
+        #sub_nests_df = results["sub_nests_with_calcs_df"]
+        #parts_df = results["parts_with_calcs_df"]
+        # Store results in session state
+        st.session_state.sub_nests_df = results["sub_nests_with_calcs_df"]
+        st.session_state.parts_df = results["parts_with_calcs_df"]        
 
         # ===== Display Results =====
         st.subheader("Sub Nests in Order")
@@ -89,25 +98,25 @@ if st.button("Process Files"):
         
         # Display sub nests in order (all sub nests combined from all reports)
         st.dataframe(
-            sub_nests_df[
-                [
-                    "Sheet Size X (mm)", "Sheet Size Y (mm)", "Material", "Thickness (mm)", 
-                    "Quantity", "Weight (kg)", "Total Weight (kg)", "Total Material Price (€)", 
-                    "Total Cutting Time (sec)", "Total Cutting Price (€)", "Total Price (€)"
-                ]
+             st.session_state.sub_nests_df[
+                 [
+                     "Sheet Size X (mm)", "Sheet Size Y (mm)", "Material", "Thickness (mm)", 
+                     "Quantity", "Weight (kg)", "Total Weight (kg)", "Total Material Price (€)", 
+                     "Total Cutting Time (sec)", "Total Cutting Price (€)", "Total Price (€)"
+                 ]
             ], 
             hide_index=False,                 
             use_container_width=False
         )
 
         # Sub Nests Summaries
-        total_material_weight = sub_nests_df["Total Weight (kg)"].sum()
-        total_material_price = sub_nests_df["Total Material Price (€)"].sum()
-        total_cutting_time_sec = sub_nests_df["Total Cutting Time (sec)"].sum()
+        total_material_weight = st.session_state.sub_nests_df["Total Weight (kg)"].sum()
+        total_material_price = st.session_state.sub_nests_df["Total Material Price (€)"].sum()
+        total_cutting_time_sec = st.session_state.sub_nests_df["Total Cutting Time (sec)"].sum()
         # Convert cutting time to HH:MM:SS format
         total_cutting_time_hms = f"{total_cutting_time_sec // 3600:02}:{(total_cutting_time_sec % 3600) // 60:02}:{total_cutting_time_sec % 60:02}"
-        total_cutting_price = sub_nests_df["Total Cutting Price (€)"].sum()
-        total_price_sub_nests = sub_nests_df["Total Price (€)"].sum()
+        total_cutting_price = st.session_state.sub_nests_df["Total Cutting Price (€)"].sum()
+        total_price_sub_nests = st.session_state.sub_nests_df["Total Price (€)"].sum()
 
         st.markdown(f"**Total Material Weight:** {total_material_weight:.2f} kg")
         st.markdown(f"**Total Material Price:** €{total_material_price:.2f}")
@@ -116,9 +125,28 @@ if st.button("Process Files"):
         st.markdown(f"<h3 style='color:green;'>Total Price: €{total_price_sub_nests:.2f}</h3>", unsafe_allow_html=True)
 
         # Combined Parts Summary
-        total_price_parts = parts_df["Total Price (€)"].sum()
+        total_price_parts = st.session_state.parts_df["Total Price (€)"].sum()
 
         st.subheader("Parts in Order")
-        st.dataframe(parts_df, use_container_width=False) # Display parts in order (all parts combined from all reports)
+        st.dataframe(st.session_state.parts_df, use_container_width=False) # Display parts in order (all parts combined from all reports)
 
-        st.markdown(f"<h3 style='color:green;'>Total Price (All Parts): €{total_price_parts:.2f}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:green;'>Total Price (All Parts): €{total_price_parts:.2f}</h3>", unsafe_allow_html=True)        
+
+
+# ===== Submit prices to Bubble =====
+if st.button("Submit Prices"):
+    if st.session_state.parts_df is None:
+        st.error("Please process the files first before submitting prices.")
+    else:
+        st.write("Submitting prices to Bubble...")
+        quote_data = {
+            "status": "Draft",
+            "items": st.session_state.parts_df.to_dict("records") # Convert DataFrame to list of dictionaries
+        }
+
+        # Call API function
+        success, message = submit_prices_to_bubble(quote_data)
+        if success:
+            st.success(message)
+        else:
+            st.error(message)
