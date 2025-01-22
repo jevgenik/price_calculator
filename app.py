@@ -8,6 +8,13 @@ from api_utils import submit_prices_to_bubble
 # Streamlit configuration
 st.set_page_config(page_title="Hinnakalkulaator", page_icon=":moneybag:", layout="wide")
 
+# Initialize session state variables 
+# to store the results of processed reports
+if "sub_nests_df" not in st.session_state:
+    st.session_state.sub_nests_df = None
+if "parts_df" not in st.session_state:
+    st.session_state.parts_df = None
+
 # Title
 st.title("Hinnakalkulaator")
 
@@ -38,12 +45,6 @@ with st.sidebar:
     cutting_price_per_sec = st.number_input(
         "Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.05
     )
-
-# Initialize session state variables
-if "sub_nests_df" not in st.session_state:
-    st.session_state.sub_nests_df = None
-if "parts_df" not in st.session_state:
-    st.session_state.parts_df = None
 
 # Upload multiple reports
 # Rreturns a list of file objects
