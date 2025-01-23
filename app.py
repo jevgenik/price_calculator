@@ -90,8 +90,8 @@ if st.button("Process Files"):
         #sub_nests_df = results["sub_nests_with_calcs_df"]
         #parts_df = results["parts_with_calcs_df"]
         # Store results in session state
-        st.session_state.sub_nests_df = results["sub_nests_with_calcs_df"]
-        st.session_state.parts_df = results["parts_with_calcs_df"]        
+        st.session_state.sub_nests_df = results["sub_nests_with_calcs_df"] # DataFrame
+        st.session_state.parts_df = results["parts_with_calcs_df"] # DataFrame
 
         # ===== Display Results =====
         st.subheader("Sub Nests in Order")
@@ -140,9 +140,11 @@ if st.button("Submit Prices"):
         st.error("Please process the files first before submitting prices.")
     else:
         st.write("Submitting prices to Bubble...")
+        # Select specific columns to export through the API
+        selected_columns = ["Part Name", "Ordered Qty", "Weight (kg)", "Material", "Thickness (mm)", "Price per Part (€)"]
         quote_data = {
             "status": "Draft",
-            "items": st.session_state.parts_df.to_dict("records") # Convert DataFrame to list of dictionaries
+            "items": st.session_state.parts_df[selected_columns].to_dict("records") # Convert selected columns to list of dictionaries
         }
 
         # Call API function
