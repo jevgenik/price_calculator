@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import json # Added for debugging
 from parsers import parse_sub_nests, parse_parts, parse_multiple_reports
 from calculations import calculate_sub_nests, calculate_parts, calculate_order, MissingMaterialPriceError
 from ui_components import display_table, display_summary
@@ -89,7 +90,9 @@ if st.button("Process Files"):
         # Extract results (DataFrames) from the combined results dictionary
         #sub_nests_df = results["sub_nests_with_calcs_df"]
         #parts_df = results["parts_with_calcs_df"]
-        # Store results in session state
+        # Store parsed and calculated values in session state to send them later through the API to Bubble
+        # Because function submit_prices_to_bubble() is called after the button click so the calculation script 
+        # is not executed again
         st.session_state.sub_nests_df = results["sub_nests_with_calcs_df"] # DataFrame
         st.session_state.parts_df = results["parts_with_calcs_df"] # DataFrame
 
@@ -110,7 +113,7 @@ if st.button("Process Files"):
             use_container_width=False
         )
 
-        # Sub Nests Summaries
+        # == Sub Nests Summaries
         total_material_weight = st.session_state.sub_nests_df["Total Weight (kg)"].sum()
         total_material_price = st.session_state.sub_nests_df["Total Material Price (€)"].sum()
         total_cutting_time_sec = st.session_state.sub_nests_df["Total Cutting Time (sec)"].sum()
@@ -118,6 +121,13 @@ if st.button("Process Files"):
         total_cutting_time_hms = f"{total_cutting_time_sec // 3600:02}:{(total_cutting_time_sec % 3600) // 60:02}:{total_cutting_time_sec % 60:02}"
         total_cutting_price = st.session_state.sub_nests_df["Total Cutting Price (€)"].sum()
         total_price_sub_nests = st.session_state.sub_nests_df["Total Price (€)"].sum()
+        
+        # Store calculated values in session state to send them later through the API to Bubble
+        # Because function submit_prices_to_bubble() is called after the button click so the calculation script 
+        # is not executed again
+        st.session_state.total_material_price = total_material_price
+        st.session_state.total_cutting_price = total_cutting_price
+        st.session_state.total_price_sub_nests = total_price_sub_nests
 
         st.markdown(f"**Total Material Weight:** {total_material_weight:.2f} kg")
         st.markdown(f"**Total Material Price:** €{total_material_price:.2f}")
@@ -142,10 +152,19 @@ if st.button("Submit Prices"):
         st.write("Submitting prices to Bubble...")
         # Select specific columns to export through the API
         selected_columns = ["Part Name", "Ordered Qty", "Weight (kg)", "Material", "Thickness (mm)", "Price per Part (€)"]
-        quote_data = {
-            "status": "Draft",
+        quote_data = { 
+            "Total Material Price": st.session_state.total_material_price,
+            "Total Cutting Price": st.session_state.total_cutting_price,
+            #"Total Price": st.session_state.total_price_sub_nests,
             "items": st.session_state.parts_df[selected_columns].to_dict("records") # Convert selected columns to list of dictionaries
         }
+
+        # Optional: Display the payload being sent for debugging
+        with st.expander("JSON Payload Sent to Bubble"):
+            json_payload = json.dumps(quote_data, indent=4)
+            # Calculate the height based on the number of lines in the JSON payload
+            height = min(600, max(100, len(json_payload.split('\n')) * 20)) # Max height is 600px
+            st.text_area("Payload", json_payload, height=height)
 
         # Call API function
         success, message = submit_prices_to_bubble(quote_data)

@@ -84,12 +84,13 @@ def calculate_order(combined_data, material_prices, cutting_price_per_sec):
     # The .apply() method is used to apply a function (in this case, a lambda function) to each row 
     # or column of the DataFrame. axis=1 specifies that the function is applied row by row (not column by column).
     sub_nests_df["Total Material Price (€)"] = sub_nests_df.apply(
-        lambda row: row["Total Weight (kg)"] * material_prices[row["Material"]],
+        lambda row: round(row["Total Weight (kg)"] * material_prices[row["Material"]], 2), # Round Total Mat. Price to 2 decimal places
         axis=1
     )
     
     # Calculate Total Cutting Price using a single cutting price
-    sub_nests_df["Total Cutting Price (€)"] = sub_nests_df["Total Cutting Time (sec)"] * cutting_price_per_sec
+    # And round to 2 decimal places
+    sub_nests_df["Total Cutting Price (€)"] = round(sub_nests_df["Total Cutting Time (sec)"] * cutting_price_per_sec, 2)
     
     # Total Price for Sub Nests
     sub_nests_df["Total Price (€)"] = sub_nests_df["Total Material Price (€)"] + sub_nests_df["Total Cutting Price (€)"]
@@ -105,7 +106,8 @@ def calculate_order(combined_data, material_prices, cutting_price_per_sec):
             axis=1
         )
     )
-    parts_df["Total Price (€)"] = parts_df["Price per Part (€)"] * parts_df["Ordered Qty"]
+    # Calcualte total price for all theses parts
+    parts_df["Total Price (€)"] = round(parts_df["Price per Part (€)"] * parts_df["Ordered Qty"], 2)
 
     # Return results
     return {
