@@ -2,7 +2,7 @@ import json
 import requests
 
 BUBBLE_API_BASE_URL_DEV = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf"
-BUBBLE_API_BASE_URL_PROD = "https://ank-technology-53914.bubbleapps.io/api/1.1/w"
+BUBBLE_API_BASE_URL_PROD = "https://ank-technology-53914.bubbleapps.io/api/1.1/wf"
 
 # For bubble API endpoint parameter automatic detection
 #BUBBLE_API_CREATE_QUOTE_INIT_DEV = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf/create_quote/initialize"
