@@ -1,10 +1,11 @@
 import json
 import requests
 
-BUBBLE_API_BASE_URL = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf"
+BUBBLE_API_BASE_URL_DEV = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf"
+BUBBLE_API_BASE_URL_PROD = "https://ank-technology-53914.bubbleapps.io/api/1.1/w"
 
 # For bubble API endpoint parameter automatic detection
-#BUBBLE_API_CREATE_QUOTE_INIT = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf/create_quote/initialize"
+#BUBBLE_API_CREATE_QUOTE_INIT_DEV = "https://ank-technology-53914.bubbleapps.io/version-test/api/1.1/wf/create_quote/initialize"
 
 def submit_prices_to_bubble(quote_data):
     """
@@ -18,8 +19,9 @@ def submit_prices_to_bubble(quote_data):
     """
     try:
         response = requests.post(
-            f"{BUBBLE_API_BASE_URL}/create_quote",
-            #f"{BUBBLE_API_CREATE_QUOTE_INIT}",
+            #f"{BUBBLE_API_BASE_URL_DEV}/create_quote",
+            f"{BUBBLE_API_BASE_URL_PROD}/create_quote",
+            #f"{BUBBLE_API_CREATE_QUOTE_INIT_DEV}",
             headers={"Content-Type": "application/json"},
             json=quote_data
         )
