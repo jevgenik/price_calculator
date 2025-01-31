@@ -21,7 +21,7 @@ st.title("Hinnakalkulaator")
 
 # Define a dictionary of materials with default prices (€/kg)
 materials_with_prices = {
-    "Aluminum": 1.9,
+    "Aluminium": 1.9,
     "Galvanized Steel": 0.5,   
     "Mild Steel": 0.3,    
     "Stainless Steel": 1.7
@@ -32,8 +32,7 @@ with st.sidebar:
     st.subheader("Price Inputs")
     
     # Dynamic input fields for material prices
-    # material_prices is a dictionary with material names as keys and user entered prices as values
-    material_prices = {}
+    material_prices = {} # Dictionary to store prices for each material that the user inputs
     for material, default_price in materials_with_prices.items():
         material_prices[material] = st.number_input(
             f"Price for {material} (€/kg):",
