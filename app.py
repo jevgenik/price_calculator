@@ -125,6 +125,7 @@ if st.button("Process Files"):
         # Because function submit_prices_to_bubble() is called after the button click so the calculation script 
         # is not executed again
         st.session_state.total_material_price = total_material_price
+        st.session_state.total_cutting_time_sec = total_cutting_time_sec
         st.session_state.total_cutting_price = total_cutting_price
         st.session_state.total_price_sub_nests = total_price_sub_nests
 
@@ -153,6 +154,7 @@ if st.button("Submit Prices"):
         selected_columns = ["Part Name", "Ordered Qty", "Weight (kg)", "Material", "Thickness (mm)", "Price per Part (€)"]
         quote_data = { 
             "Total Material Price": st.session_state.total_material_price,
+            "Total Cutting Time (sec)": int(st.session_state.total_cutting_time_sec), # use int() to prevent JSON serialization error like "Object of type int64 is not JSON serializable"
             "Total Cutting Price": st.session_state.total_cutting_price,
             #"Total Price": st.session_state.total_price_sub_nests,
             "items": st.session_state.parts_df[selected_columns].to_dict("records") # Convert selected columns to list of dictionaries
