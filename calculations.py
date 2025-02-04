@@ -1,7 +1,7 @@
 import pandas as pd
 
 # Global parameters
-MIN_CUTTING_TIME_SECONDS = 900  # Minimum cutting time in seconds per 1 sheet
+MIN_CUT_TIME_PER_SHEET_SEC = 900  # Minimum cutting time in seconds per 1 sheet (15 minutes)
 
 class MissingMaterialPriceError(Exception):
     """Custom exception for missing material prices."""
@@ -25,15 +25,15 @@ def convert_hhmmss_to_seconds(time_str):
 
 def apply_minimum_cutting_time(cutting_time_sec):
     """
-    Apply minimum cutting time threshold to a given cutting time.
-    If the input time is less than MIN_CUTTING_TIME_SECONDS (900 seconds/15 minutes),
-    return MIN_CUTTING_TIME_SECONDS instead.
+    Apply minimum cutting time threshold to a given cutting time per sheet.
+    If the input time is less than MIN_CUT_TIME_PER_SHEET_SEC (900 seconds/15 minutes),
+    return MIN_CUT_TIME_PER_SHEET_SEC instead.
     
     Args:
-        cutting_time_sec (int): Original cutting time in seconds
+        cutting_time_sec (int): Original cutting time in seconds for one sheet
     
     Returns:
-        int: Either the original cutting time or MIN_CUTTING_TIME_SECONDS,
+        int: Either the original cutting time or MIN_CUT_TIME_PER_SHEET_SEC,
              whichever is larger
     
     Example:
@@ -42,7 +42,7 @@ def apply_minimum_cutting_time(cutting_time_sec):
         >>> apply_minimum_cutting_time(1200)  # 20 minutes
         1200  # Returns original time as it's above threshold
     """
-    return max(cutting_time_sec, MIN_CUTTING_TIME_SECONDS)
+    return max(cutting_time_sec, MIN_CUT_TIME_PER_SHEET_SEC)
 
 def calculate_sub_nests(sub_nests_df, mat_price_per_kg, cutting_price_per_sec):
     """
@@ -119,7 +119,6 @@ def calculate_order(combined_data, material_prices, cutting_price_per_sec):
     sub_nests_df["Cutting Time (sec / sheet)"] = sub_nests_df["Cutting Time (1 sheet)"].apply(
         lambda x: apply_minimum_cutting_time(convert_hhmmss_to_seconds(x))
     )
-    
     sub_nests_df["Total Cutting Time (sec)"] = sub_nests_df["Cutting Time (sec / sheet)"] * sub_nests_df["Quantity"]
     
     # Calculate Total Material Price based on material name
