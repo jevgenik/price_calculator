@@ -25,8 +25,8 @@ def parse_sub_nests(file_content):
     # |Plate#  |Size X      |Size Y     |Material    |Thickness |Qty     |Area      |Weight    |Efficiency | 
     # |1       |3000        |1500       |Mild Steel  |4.2       |6       |4.50      |148.365   |00:48:08    |
     # |2       |3000        |1500       |Mild Steel  |4.2       |1       |5.50      |148.365   |00:43:09    |
-
-
+    # NOTE Column efficiency in the input .TXT report file from Metallix means Cuttime time per 1 sheet
+    
     # Debugging: Extract table section between "Sub Nests in Order" and "Parts in Order"
     # try:
     #     start_marker = "Sub Nests in Order:"
