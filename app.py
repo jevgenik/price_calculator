@@ -41,9 +41,13 @@ with st.sidebar:
             value=default_price
         )
     
-    # Single input for cutting price
+    # Single input for cutting price with 3 decimal points
     cutting_price_per_sec = st.number_input(
-        "Enter cutting price per second (€/sec):", min_value=0.0, step=0.001, value=0.05
+        "Enter cutting price per second (€/sec):", 
+        min_value=0.000,
+        step=0.001,
+        value=0.050,
+        format="%.3f"  # Format to always show 3 decimal places
     )
 
 # Upload multiple reports
