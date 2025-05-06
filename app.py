@@ -51,23 +51,28 @@ with st.sidebar:
     )
 
 # Upload multiple reports
-# Rreturns a list of file objects
-uploaded_files = st.file_uploader("Upload Metallix AutoNest reports", type=["txt", "TXT"], accept_multiple_files=True)
+# Returns a list of file objects - accept any file type and validate later
+uploaded_files = st.file_uploader("Upload Metallix AutoNest reports", accept_multiple_files=True)
 
 if uploaded_files:
     # Read the content of each uploaded file
-    # file_contents is a list of strings (like ['file1 content', 'file2 content'])    
-    #file_contents = [file.read().decode("utf-8") for file in uploaded_files]
-
     file_contents = [] # List to store the content (as strings) of all uploaded files
     for file in uploaded_files: # file is a file object
+        # Check if file has a valid extension
+        file_name = file.name.lower()
+        if not file_name.endswith('.txt'):
+            st.warning(f"File '{file.name}' may not be a valid TXT file. Attempting to process anyway.")
+            
         # Read and decode the file content
-        content = file.read().decode("utf-8")
-        file_contents.append(content)
-        
-        # Display the file name and preview content in an expandable section
-        with st.expander(f"Preview: {file.name}"):
-            st.text_area(f"Content of {file.name}", content, height=300)
+        try:
+            content = file.read().decode("utf-8")
+            file_contents.append(content)
+            
+            # Display the file name and preview content in an expandable section
+            with st.expander(f"Preview: {file.name}"):
+                st.text_area(f"Content of {file.name}", content, height=300)
+        except UnicodeDecodeError:
+            st.error(f"Unable to decode file '{file.name}'. Please ensure it's a valid text file.")
 
 # Add a button to process the uploaded files
 if st.button("Process Files"):
