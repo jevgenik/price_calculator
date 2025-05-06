@@ -52,7 +52,7 @@ with st.sidebar:
 
 # Upload multiple reports
 # Rreturns a list of file objects
-uploaded_files = st.file_uploader("Upload Metallix AutoNest reports", type="txt", accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload Metallix AutoNest reports", type=["txt", "TXT"], accept_multiple_files=True)
 
 if uploaded_files:
     # Read the content of each uploaded file
